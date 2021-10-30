@@ -9,8 +9,8 @@
     <div class="reservation__datepicker" @click="toggleDatepicker">
       <p class="reservation__check">{{ dates.from || 'Check In' }}</p>
       <p class="reservation__check">{{ dates.to || 'Check Out' }}</p>
+      <AppDatepicker v-show="!datepickerOpen" :dateRange="dateRange" />
     </div>
-    <AppDatepicker v-if="datepickerOpen" />
     <p class="reservation__header">Personal Info</p>
     <form class="reservation__section">
       <input
@@ -54,6 +54,7 @@
 </template>
 
 <script>
+import moment from 'moment';
 import AppDatepicker from '@/components/AppDatepicker.vue';
 import AppStars from '@/components/AppStars.vue';
 
@@ -75,6 +76,16 @@ export default {
     rateCount: {
       type: Number,
       required: false,
+    },
+    dateRange: {
+      type: Object,
+      required: false,
+      default() {
+        return ({
+          from: moment().format('YYYY-MM-DD'),
+          to: moment().add(6, 'months').format('YYYY-MM-DD'),
+        });
+      },
     },
   },
   data() {
@@ -170,8 +181,7 @@ export default {
   &__header {
     font-size: 14px;
     font-weight: 700;
-    margin-top: $s24;
-    margin-bottom: $s8;
+    margin: $s24 $s2 $s8;
   }
 
   &__datepicker {
@@ -182,6 +192,7 @@ export default {
     border: 1px solid $borderGrey;
     border-radius: $s4;
     cursor: pointer;
+    user-select: none;
     transition-duration: $transition-duration;
 
     &:hover {
