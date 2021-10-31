@@ -21,6 +21,7 @@ export default {
 body,
 html {
   height: 100%;
+  margin: 0;
   background-color: $backgroundGrey;
   font-family: "Roboto", sans-serif;
   color: $mainTextGrey;

@@ -9,7 +9,12 @@
     <div class="reservation__datepicker" @click="toggleDatepicker">
       <p class="reservation__check">{{ selectedStartDate || 'Check In' }}</p>
       <p class="reservation__check">{{ selectedEndDate || 'Check Out' }}</p>
-      <AppDatepicker v-show="datepickerOpen" :dateRange="dateRange" />
+      <AppDatepicker
+        v-show="datepickerOpen"
+        :dateRange="dateRange"
+        :unavailable="['2021-11-20', '2021-12-25', '2021-12-26']"
+        :key="`datepicker-version-${version}`"
+      />
     </div>
     <p class="reservation__header">Personal Info</p>
     <form class="reservation__section">
@@ -96,6 +101,7 @@ export default {
       email: '',
       phone: '',
       reservationSent: false,
+      version: 1,
     };
   },
   computed: {
@@ -119,6 +125,7 @@ export default {
       this.email = '';
       this.phone = '';
       this.clearSelectedDates();
+      this.version += 1;
     },
   },
 };

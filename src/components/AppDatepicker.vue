@@ -1,27 +1,38 @@
 <template>
   <div class="datepicker" @click.stop>
-    <div class="datepicker__header">
-      <div class="datepicker__navigation datepicker__navigation--back" @click="adjustMonth(-1)" />
-      <h3 class="datepicker__header-text">{{ selectedMonth }}</h3>
-      <div class="datepicker__navigation datepicker__navigation--forth" @click="adjustMonth(1)" />
-    </div>
-    <div class="datepicker__callendar">
-      <p
-        v-for="day in weekDays"
-        :key="`week-day-${day}`"
-        class="datepicker__day-name">
-          {{ day }}
-      </p>
-      <p
-        v-for="date in monthCallendar"
-        :key="date"
-        @click="pickDate(date)"
-        :class="[
-          'datepicker__day',
-          {'datepicker__day--current-month': isDateInThisMonth(date) }
-        ]">
-          {{ showDay(date) }}
-      </p>
+    <div class="datepicker__background" @click="toggleDatepicker" />
+    <div class="datepicker__body">
+      <div class="datepicker__header">
+        <div class="datepicker__navigation datepicker__navigation--back" @click="adjustMonth(-1)" />
+        <h3 class="datepicker__header-text">{{ selectedMonth }}</h3>
+        <div class="datepicker__navigation datepicker__navigation--forth" @click="adjustMonth(1)" />
+      </div>
+      <div class="datepicker__callendar">
+        <p class="datepicker__unavailable-between" v-if="unavailableInsidePeriod">
+          There is an uavailable date during this period.
+        </p>
+        <p
+          v-for="day in weekDays"
+          :key="`week-day-${day}`"
+          class="datepicker__day-name">
+            {{ day }}
+        </p>
+        <p
+          v-for="date in monthCallendar"
+          :key="date"
+          @click="pickDate(date)"
+          :class="[
+            'datepicker__day',
+            {'datepicker__day--current-month': isInThisMonth(date) },
+            {'datepicker__day--selected': isBetween(date) },
+            {'datepicker__day--first': isFirst(date) },
+            {'datepicker__day--last': isLast(date) },
+            {'datepicker__day--exact': isExact(date) },
+            {'datepicker__day--disabled': isDisabled(date) },
+          ]">
+            {{ showDay(date) }}
+        </p>
+      </div>
     </div>
   </div>
 </template>
@@ -37,12 +48,20 @@ export default {
       type: Object,
       required: true,
     },
+    unavailable: {
+      type: Array,
+      default() {
+        return ([]);
+      },
+      required: false,
+    },
   },
   data() {
     return {
       selectedMonth: moment(this.dateRange.from).format('MMMM YYYY'),
       weekDays: ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'],
       monthCallendar: [],
+      unavailableInsidePeriod: false,
     };
   },
   computed: {
@@ -50,6 +69,12 @@ export default {
       'selectedStartDate',
       'selectedEndDate',
     ]),
+    done() {
+      return this.selectedStartDate && !!this.selectedEndDate;
+    },
+    isOneDay() {
+      return this.selectedStartDate === this.selectedEndDate;
+    },
   },
   methods: {
     ...mapActions([
@@ -57,10 +82,6 @@ export default {
       'setEndDate',
       'toggleDatepicker',
     ]),
-    checkIfDateIsInRange(date) {
-      const { to } = this.dateRange;
-      return moment(date).isSameOrBefore(to);
-    },
     getCallendarForSelectedMonth() {
       const daysFromPrevMonth = moment(this.selectedMonth).day();
       const monthLength = moment(this.selectedMonth).daysInMonth();
@@ -81,17 +102,49 @@ export default {
     showDay(date) {
       return moment(date).format('D');
     },
-    isDateInThisMonth(date) {
+    isInThisMonth(date) {
       return moment(date).format('YYYY-MM') === moment(this.selectedMonth).format('YYYY-MM');
     },
     pickDate(date) {
+      if (this.isDisabled(date)) return;
+      if (this.unavailableIsInTheMiddle(date)) {
+        this.unavailableInsidePeriod = true;
+        this.setStartDate('');
+        return;
+      }
       if (!this.selectedStartDate || (this.selectedStartDate && this.selectedEndDate)) {
         this.setStartDate(date);
         this.setEndDate('');
       } else {
-        this.setEndDate(date);
+        if (moment(date).isBefore(this.selectedStartDate)) {
+          this.setEndDate(this.selectedStartDate);
+          this.setStartDate(date);
+        } else {
+          this.setEndDate(date);
+        }
+        this.unavailableInsidePeriod = false;
         this.toggleDatepicker();
       }
+    },
+    isBetween(date) {
+      return this.done && moment(date).isBetween(this.selectedStartDate, this.selectedEndDate);
+    },
+    isFirst(date) {
+      return this.done && moment(date).format('YYYY-MM-DD') === moment(this.selectedStartDate).format('YYYY-MM-DD');
+    },
+    isLast(date) {
+      return this.done && moment(date).format('YYYY-MM-DD') === moment(this.selectedEndDate).format('YYYY-MM-DD');
+    },
+    isExact(date) {
+      return this.isOneDay && this.isFirst(date);
+    },
+    isDisabled(date) {
+      const beforeAllowed = moment(date).isBefore(this.dateRange.from);
+      const afterAllowed = moment(date).isAfter(this.dateRange.to);
+      return beforeAllowed || afterAllowed || this.unavailable?.includes(date);
+    },
+    unavailableIsInTheMiddle(date) {
+      return this.unavailable?.find((disabled) => moment(disabled).isBetween(this.selectedStartDate, date));
     },
   },
   beforeMount() {
@@ -102,24 +155,27 @@ export default {
 
 <style scoped lang="scss">
 .datepicker {
-  width: 100%;
   position: absolute;
+  width: 100%;
   top: $s56;
   left: -$s8;
-  background-color: $white;
-  border: 1px solid $borderGrey;
-  cursor: initial;
 
-  &::before {
-    content: '';
-    position: absolute;
-    width: $s12;
-    height: $s12;
-    top: -$s8;
-    left: $s24;
-    border-top: 1px solid $borderGrey;
-    border-left: 1px solid $borderGrey;
-    transform: rotate(45deg);
+  &__body {
+    background-color: $white;
+    border: 1px solid $borderGrey;
+    cursor: initial;
+
+    &::before {
+      content: '';
+      position: absolute;
+      width: $s12;
+      height: $s12;
+      top: -$s8;
+      left: $s24;
+      border-top: 1px solid $borderGrey;
+      border-left: 1px solid $borderGrey;
+      transform: rotate(45deg);
+    }
   }
 
   &__header {
@@ -180,6 +236,18 @@ export default {
     justify-content: space-between;
     flex-wrap: wrap;
     padding: $s16;
+    position: relative;
+  }
+
+  &__unavailable-between {
+    font-size: 14px;
+    line-height: 16px;
+    width: 100%;
+    text-align: center;
+    color: $mainRed;
+    position: absolute;
+    top: $s4;
+    left: 0;
   }
 
   &__day,
@@ -187,6 +255,7 @@ export default {
     padding: $s16 0;
     width: calc(100% / 7);
     font-size: 14px;
+    line-height: 16px;
     font-weight: 700;
     text-align: center;
     text-transform: capitalize;
@@ -227,22 +296,79 @@ export default {
       color: $secondaryTextGrey;
     }
 
-    &--selected {
+    &--selected,
+    &--first,
+    &--last {
+      color: $mainGreen;
+      z-index: 1;
 
+      &::before {
+        content: '';
+        width: 100%;
+        height: 36px;
+        position: absolute;
+        top: calc((100% - 36px) / 2 );
+        left: 0;
+        z-index: -2;
+        background-color: $washedGreen;
+      }
+    }
+
+    &--first,
+    &--last {
+      color: $white;
+
+      &:hover {
+        color: $white;
+      }
+
+      &::after {
+        background: $mainGreen;
+        z-index: -1;
+      }
     }
 
     &--first {
-
+      &::before {
+        width: 50%;
+        left: 50%;
+      }
     }
 
     &--last {
+      &::before {
+        width: 50%;
+      }
+    }
 
+    &--exact {
+      &::before {
+        display: none;
+      }
     }
 
     &--disabled {
+      cursor: not-allowed;
+      text-decoration: line-through;
+      background: $borderGrey;
 
+      &::after {
+        border: none;
+      }
+
+      &:hover {
+        color: $mainRed;
+      }
     }
+  }
 
+  &__background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    cursor: auto;
   }
 }
 </style>
