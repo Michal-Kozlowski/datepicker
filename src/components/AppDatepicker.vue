@@ -9,15 +9,16 @@
       <p
         v-for="day in weekDays"
         :key="`week-day-${day}`"
-        class="datepicker__week-day datepicker__week-day--name">
+        class="datepicker__day-name">
           {{ day }}
       </p>
       <p
         v-for="date in monthCallendar"
         :key="date"
+        @click="pickDate(date)"
         :class="[
-          'datepicker__week-day',
-          {'datepicker__week-day--current-month': isDateInThisMonth(date) }
+          'datepicker__day',
+          {'datepicker__day--current-month': isDateInThisMonth(date) }
         ]">
           {{ showDay(date) }}
       </p>
@@ -27,6 +28,7 @@
 
 <script>
 import moment from 'moment';
+import { mapState, mapActions } from 'vuex';
 
 export default {
   name: 'AppDatepicker',
@@ -43,7 +45,18 @@ export default {
       monthCallendar: [],
     };
   },
+  computed: {
+    ...mapState([
+      'selectedStartDate',
+      'selectedEndDate',
+    ]),
+  },
   methods: {
+    ...mapActions([
+      'setStartDate',
+      'setEndDate',
+      'toggleDatepicker',
+    ]),
     checkIfDateIsInRange(date) {
       const { to } = this.dateRange;
       return moment(date).isSameOrBefore(to);
@@ -70,6 +83,15 @@ export default {
     },
     isDateInThisMonth(date) {
       return moment(date).format('YYYY-MM') === moment(this.selectedMonth).format('YYYY-MM');
+    },
+    pickDate(date) {
+      if (!this.selectedStartDate || (this.selectedStartDate && this.selectedEndDate)) {
+        this.setStartDate(date);
+        this.setEndDate('');
+      } else {
+        this.setEndDate(date);
+        this.toggleDatepicker();
+      }
     },
   },
   beforeMount() {
@@ -160,7 +182,8 @@ export default {
     padding: $s16;
   }
 
-  &__week-day {
+  &__day,
+  &__day-name {
     padding: $s16 0;
     width: calc(100% / 7);
     font-size: 14px;
@@ -169,15 +192,57 @@ export default {
     text-transform: capitalize;
     color: $lighterTextGrey;
     cursor: pointer;
+  }
 
-    &--name {
-      color: $lightTextGrey;
-      cursor: initial;
+  &__day-name {
+    color: $lightTextGrey;
+    cursor: initial;
+  }
+
+  &__day {
+    position: relative;
+    transition-duration: $transition-duration;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: calc(50% - 32px / 2 - 2px);
+      left: calc(50% - 32px / 2 - 2px);
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      transition-duration: $transition-duration;
+    }
+
+    &:hover {
+      color: $mainGreen;
+
+      &::after {
+        border-color: $mainGreen;
+      }
     }
 
     &--current-month {
       color: $secondaryTextGrey;
     }
+
+    &--selected {
+
+    }
+
+    &--first {
+
+    }
+
+    &--last {
+
+    }
+
+    &--disabled {
+
+    }
+
   }
 }
 </style>

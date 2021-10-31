@@ -7,9 +7,9 @@
     </div>
     <p class="reservation__header">Dates</p>
     <div class="reservation__datepicker" @click="toggleDatepicker">
-      <p class="reservation__check">{{ dates.from || 'Check In' }}</p>
-      <p class="reservation__check">{{ dates.to || 'Check Out' }}</p>
-      <AppDatepicker v-show="!datepickerOpen" :dateRange="dateRange" />
+      <p class="reservation__check">{{ selectedStartDate || 'Check In' }}</p>
+      <p class="reservation__check">{{ selectedEndDate || 'Check Out' }}</p>
+      <AppDatepicker v-show="datepickerOpen" :dateRange="dateRange" />
     </div>
     <p class="reservation__header">Personal Info</p>
     <form class="reservation__section">
@@ -55,6 +55,7 @@
 
 <script>
 import moment from 'moment';
+import { mapState, mapActions } from 'vuex';
 import AppDatepicker from '@/components/AppDatepicker.vue';
 import AppStars from '@/components/AppStars.vue';
 
@@ -90,22 +91,25 @@ export default {
   },
   data() {
     return {
-      datepickerOpen: false,
       name: '',
       surname: '',
       email: '',
       phone: '',
-      dates: {
-        from: '21-12-2021',
-        to: null,
-      },
       reservationSent: false,
     };
   },
+  computed: {
+    ...mapState([
+      'selectedStartDate',
+      'selectedEndDate',
+      'datepickerOpen',
+    ]),
+  },
   methods: {
-    toggleDatepicker() {
-      this.datepickerOpen = !this.datepickerOpen;
-    },
+    ...mapActions([
+      'clearSelectedDates',
+      'toggleDatepicker',
+    ]),
     submitForm() {
       this.reservationSent = true;
     },
@@ -114,6 +118,7 @@ export default {
       this.surname = '';
       this.email = '';
       this.phone = '';
+      this.clearSelectedDates();
     },
   },
 };
