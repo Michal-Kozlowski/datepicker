@@ -12,7 +12,7 @@
       <AppDatepicker
         v-show="datepickerOpen"
         :dateRange="dateRange"
-        :unavailable="['2021-11-20', '2021-12-25', '2021-12-26']"
+        :unavailable="datesUnavailable"
         :key="`datepicker-version-${version}`"
       />
     </div>
@@ -93,6 +93,10 @@ export default {
         });
       },
     },
+    datesUnavailable: {
+      type: Array,
+      required: false,
+    },
   },
   data() {
     return {
@@ -134,6 +138,7 @@ export default {
 <style scoped lang="scss">
 .reservation {
   font-size: 18px;
+  line-height: 24px;
   position: relative;
   width: 360px;
   padding: $s24 $s32;
@@ -161,6 +166,7 @@ export default {
     &::after {
       content: 'Thank you for booking :)';
       font-size: 24px;
+      line-height: 32px;
       position: absolute;
       top: calc(50% - $s24/2);
       text-align: center;
@@ -172,6 +178,7 @@ export default {
 
   &__price {
     font-size: 28px;
+    line-height: 36px;
     font-weight: 900;
     margin-bottom: $s8;
   }
@@ -185,6 +192,7 @@ export default {
 
   &__rate-count {
     font-size: 14px;
+    line-height: 16px;
     font-weight: 700;
     margin-top: $s2;
     margin-left: $s8;
@@ -192,6 +200,7 @@ export default {
 
   &__header {
     font-size: 14px;
+    line-height: 16px;
     font-weight: 700;
     margin: $s24 $s2 $s8;
   }
@@ -263,6 +272,7 @@ export default {
     padding: $s12 $s8;
     margin-bottom: $s16;
     font-size: inherit;
+    line-height: inherit;
     border: 1px solid $borderGrey;
 
     &--full {

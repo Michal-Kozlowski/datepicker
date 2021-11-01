@@ -1,6 +1,11 @@
 <template>
   <div class="main">
-    <AppReservation :price="298" :rate="4.5" :rate-count="123" />
+    <AppReservation
+      :price="298"
+      :rate="4.5"
+      :rate-count="123"
+      :dates-unavailable="['2021-11-20', '2021-12-25', '2021-12-26']"
+    />
   </div>
 </template>
 

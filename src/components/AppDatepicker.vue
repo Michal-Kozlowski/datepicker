@@ -24,6 +24,7 @@
           :class="[
             'datepicker__day',
             {'datepicker__day--current-month': isInThisMonth(date) },
+            {'datepicker__day--today': isToday(date) },
             {'datepicker__day--selected': isBetween(date) },
             {'datepicker__day--first': isFirst(date) },
             {'datepicker__day--last': isLast(date) },
@@ -62,12 +63,19 @@ export default {
       weekDays: ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'],
       monthCallendar: [],
       unavailableInsidePeriod: false,
+      closeTimeout: null,
     };
+  },
+  watch: {
+    datepickerOpen() {
+      clearTimeout(this.closeTimeout);
+    },
   },
   computed: {
     ...mapState([
       'selectedStartDate',
       'selectedEndDate',
+      'datepickerOpen',
     ]),
     done() {
       return this.selectedStartDate && !!this.selectedEndDate;
@@ -107,36 +115,39 @@ export default {
     },
     pickDate(date) {
       if (this.isDisabled(date)) return;
-      if (this.unavailableIsInTheMiddle(date)) {
-        this.unavailableInsidePeriod = true;
-        this.setStartDate('');
-        return;
-      }
+      if (this.unavailableIsInTheMiddle(date)) return;
       if (!this.selectedStartDate || (this.selectedStartDate && this.selectedEndDate)) {
         this.setStartDate(date);
         this.setEndDate('');
+        this.unavailableInsidePeriod = false;
       } else {
         if (moment(date).isBefore(this.selectedStartDate)) {
           this.setEndDate(this.selectedStartDate);
           this.setStartDate(date);
+          if (this.unavailableIsInTheMiddle(this.selectedEndDate)) return;
         } else {
           this.setEndDate(date);
         }
         this.unavailableInsidePeriod = false;
-        this.toggleDatepicker();
+        this.closeTimeout = setTimeout(() => {
+          this.toggleDatepicker();
+        }, 300);
       }
+    },
+    isToday(date) {
+      return moment(date).format('YYYY-MM-DD') === moment().format('YYYY-MM-DD');
     },
     isBetween(date) {
       return this.done && moment(date).isBetween(this.selectedStartDate, this.selectedEndDate);
     },
     isFirst(date) {
-      return this.done && moment(date).format('YYYY-MM-DD') === moment(this.selectedStartDate).format('YYYY-MM-DD');
+      return moment(date).format('YYYY-MM-DD') === moment(this.selectedStartDate).format('YYYY-MM-DD');
     },
     isLast(date) {
       return this.done && moment(date).format('YYYY-MM-DD') === moment(this.selectedEndDate).format('YYYY-MM-DD');
     },
     isExact(date) {
-      return this.isOneDay && this.isFirst(date);
+      return this.isFirst(date) && (this.isOneDay || !this.selectedEndDate);
     },
     isDisabled(date) {
       const beforeAllowed = moment(date).isBefore(this.dateRange.from);
@@ -144,7 +155,13 @@ export default {
       return beforeAllowed || afterAllowed || this.unavailable?.includes(date);
     },
     unavailableIsInTheMiddle(date) {
-      return this.unavailable?.find((disabled) => moment(disabled).isBetween(this.selectedStartDate, date));
+      let isUnavailable = false;
+      if (this.unavailable?.find((disabled) => moment(disabled).isBetween(this.selectedStartDate, date))) {
+        this.unavailableInsidePeriod = true;
+        this.setStartDate('');
+        isUnavailable = true;
+      }
+      return isUnavailable;
     },
   },
   beforeMount() {
@@ -294,6 +311,12 @@ export default {
 
     &--current-month {
       color: $secondaryTextGrey;
+    }
+
+    &--today {
+      &::after {
+        border-color: $mainGreen;
+      }
     }
 
     &--selected,
