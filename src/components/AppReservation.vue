@@ -6,7 +6,13 @@
       <p class="reservation__rate-count">{{ rateCount }}</p>
     </div>
     <p class="reservation__header">Dates</p>
-    <div class="reservation__datepicker" @click="toggleDatepicker">
+    <div
+      :class="[
+        'reservation__datepicker',
+        {'reservation__datepicker--error': !datesValid },
+      ]"
+      @click="toggleDatepicker"
+    >
       <p class="reservation__check">{{ selectedStartDate || 'Check In' }}</p>
       <p class="reservation__check">{{ selectedEndDate || 'Check Out' }}</p>
       <AppDatepicker
@@ -19,30 +25,43 @@
     <p class="reservation__header">Personal Info</p>
     <form class="reservation__section">
       <input
-        class="reservation__input reservation__item"
-        v-model="name"
+        :class="[
+          'reservation__input reservation__item',
+          {'reservation__input--error': !firstNameValid },
+        ]"
+        v-model="firstName"
         type="text"
         placeholder="First Name"
       />
       <input
-        class="reservation__input reservation__item"
-        v-model="surname"
+        :class="[
+          'reservation__input reservation__item',
+          {'reservation__input--error': !lastNameValid },
+        ]"
+        v-model="lastName"
         type="text"
         placeholder="Last Name"
       />
       <input
-        class="reservation__input reservation__item reservation__item--full"
+        :class="[
+          'reservation__input reservation__item reservation__item--full',
+          {'reservation__input--error': !emailValid },
+        ]"
         v-model="email"
         type="email"
         placeholder="Email"
       />
       <input
-        class="reservation__input reservation__item reservation__item--full"
+        :class="[
+          'reservation__input reservation__item reservation__item--full',
+          {'reservation__input--error': !phoneValid },
+        ]"
         v-model="phone"
         type="phone"
         placeholder="Phone"
       />
     </form>
+    <p v-if="validationEnabled && errorMessage" class="reservation__error-message">{{ errorMessage }}</p>
     <div class="reservation__actions reservation__section">
       <button
         @click="submitForm"
@@ -100,12 +119,13 @@ export default {
   },
   data() {
     return {
-      name: '',
-      surname: '',
+      firstName: '',
+      lastName: '',
       email: '',
       phone: '',
       reservationSent: false,
       version: 1,
+      validationEnabled: false,
     };
   },
   computed: {
@@ -114,6 +134,40 @@ export default {
       'selectedEndDate',
       'datepickerOpen',
     ]),
+    datesValid() {
+      return !this.validationEnabled || (this.selectedStartDate && this.selectedEndDate);
+    },
+    firstNameValid() {
+      return (this.firstName === '' && !this.validationEnabled) || this.firstName.length > 2;
+    },
+    lastNameValid() {
+      return (this.firstName === '' && !this.validationEnabled) || this.lastName.length > 2;
+    },
+    emailValid() {
+      // eslint-disable-next-line max-len
+      const emailRegex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+      return (this.email === '' && !this.validationEnabled) || emailRegex.test(this.email);
+    },
+    phoneValid() {
+      const phoneRegex = /^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{3,6}$/im;
+      return (this.phone === '' && !this.validationEnabled) || phoneRegex.test(this.phone);
+    },
+    errorMessage() {
+      let invalidMessage = '';
+      const invalidList = [];
+      if (!this.selectedStartDate) invalidList.push('Check In Date');
+      if (!this.selectedEndDate) invalidList.push('Check Out Date');
+      if (!this.firstName || !this.firstNameValid) invalidList.push('First Name');
+      if (!this.lastName || !this.lastNameValid) invalidList.push('Last Name');
+      if (!this.email || !this.emailValid) invalidList.push('Email Address');
+      if (!this.phone || !this.phoneValid) invalidList.push('Phone Number');
+      if (invalidList.length > 0) {
+        invalidMessage = 'Provided ';
+        invalidList.forEach((problem, index) => { invalidMessage += `${index > 0 ? ', ' : ''}${problem}`; });
+        invalidMessage += ` ${invalidList.length > 1 ? 'are' : 'is'} incorrect.`;
+      }
+      return invalidMessage;
+    },
   },
   methods: {
     ...mapActions([
@@ -121,7 +175,8 @@ export default {
       'toggleDatepicker',
     ]),
     submitForm() {
-      this.reservationSent = true;
+      this.validationEnabled = true;
+      if (!this.errorMessage) this.reservationSent = true;
     },
     clearForm() {
       this.name = '';
@@ -216,6 +271,10 @@ export default {
     user-select: none;
     transition-duration: $transition-duration;
 
+    &--error {
+      border-color: $mainRed;
+    }
+
     &:hover {
       background-color: rgba($washedAccentGreen, 0.2);
     }
@@ -260,6 +319,12 @@ export default {
     text-align: center;
   }
 
+  &__error-message {
+    font-size: 14px;
+    line-height: 16px;
+    color: $mainRed;
+  }
+
   &__section {
     display: flex;
     flex-wrap: wrap;
@@ -283,6 +348,11 @@ export default {
   &__input {
     background-color: transparent;
     border-radius: $s4;
+    transition-duration: $transition-duration;
+
+    &--error {
+      border-color: $mainRed;
+    }
   }
 
   &__button {
