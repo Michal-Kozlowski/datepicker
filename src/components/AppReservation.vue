@@ -32,6 +32,7 @@
         v-model="firstName"
         type="text"
         placeholder="First Name"
+        name="name"
       />
       <input
         :class="[
@@ -41,6 +42,7 @@
         v-model="lastName"
         type="text"
         placeholder="Last Name"
+        name="last-name"
       />
       <input
         :class="[
