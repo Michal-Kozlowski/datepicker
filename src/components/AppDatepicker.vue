@@ -1,15 +1,15 @@
 <template>
   <div class="datepicker" @click.stop>
-    <div class="datepicker__background" @click="toggleDatepicker" />
+    <div class="datepicker__background" @click="closeDatepicker" />
     <div class="datepicker__body">
       <div class="datepicker__header">
         <div class="datepicker__navigation datepicker__navigation--back" @click="adjustMonth(-1)" />
-        <h3 class="datepicker__header-text">{{ selectedMonth }}</h3>
+        <h3 class="datepicker__header-text">{{ dateFormatWithMonthName(selectedMonth) }}</h3>
         <div class="datepicker__navigation datepicker__navigation--forth" @click="adjustMonth(1)" />
       </div>
       <div class="datepicker__callendar">
         <p class="datepicker__unavailable-between" v-if="unavailableInsidePeriod">
-          There is an uavailable date during this period.
+          There is an unavailable date during this period.
         </p>
         <p
           v-for="day in weekDays"
@@ -59,7 +59,7 @@ export default {
   },
   data() {
     return {
-      selectedMonth: moment(this.dateRange.from).format('MMMM YYYY'),
+      selectedMonth: this.dateRange.from,
       weekDays: ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'],
       monthCallendar: [],
       unavailableInsidePeriod: false,
@@ -90,6 +90,9 @@ export default {
       'setEndDate',
       'toggleDatepicker',
     ]),
+    dateFormatWithMonthName(date) {
+      return moment(date).format('MMMM YYYY');
+    },
     getCallendarForSelectedMonth() {
       const daysFromPrevMonth = moment(this.selectedMonth).day();
       const monthLength = moment(this.selectedMonth).daysInMonth();
@@ -104,7 +107,7 @@ export default {
       }
     },
     adjustMonth(delta) {
-      this.selectedMonth = moment(this.selectedMonth).add(delta, 'months').format('MMMM YYYY');
+      this.selectedMonth = moment(this.selectedMonth).add(delta, 'months').format('YYYY-MM-DD');
       this.getCallendarForSelectedMonth();
     },
     showDay(date) {
@@ -162,6 +165,10 @@ export default {
         isUnavailable = true;
       }
       return isUnavailable;
+    },
+    closeDatepicker() {
+      this.unavailableInsidePeriod = false;
+      this.toggleDatepicker();
     },
   },
   beforeMount() {
